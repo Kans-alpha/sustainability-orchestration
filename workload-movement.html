@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainable Workload Movement Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom styles for better aesthetics and responsiveness */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Darker text for readability */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px; /* Fixed height for charts */
+            width: 100%;
+        }
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .grid-cols-2 {
+                grid-template-columns: 1fr; /* Stack columns on small screens */
+            }
+            .chart-container {
+                height: 300px; /* Slightly smaller height on mobile */
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container">
+        <header class="text-center py-8">
+            <h1 class="text-4xl font-extrabold text-green-700 mb-4">Sustainable Workload Movement Simulator</h1>
+            <p class="text-lg text-gray-600">
+                Visualize how workloads move across sustainable edge data centers as renewable energy availability changes.
+            </p>
+        </header>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Simulate Workload Movement</h2>
+            <p class="text-gray-600 mb-6">
+                Click the button below to simulate a change in sustainable energy availability and observe how AI Training, Data Backup, and Video Rendering workloads are redistributed to optimize for greener energy.
+            </p>
+            <button id="simulate-movement-button" class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:-translate-y-1">
+                Simulate Energy Change & Move Workloads
+            </button>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Edge Locations & Current Energy Availability</h2>
+            <p class="text-gray-600 mb-6">
+                Overview of the seven German edge data centers, their capacities, GPU availability, and their current simulated energy availability.
+            </p>
+            <div id="edge-locations-status" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Edge location status cards will be dynamically added here by JavaScript -->
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Workload Distribution Across Locations</h2>
+            <p class="text-gray-600 mb-6">
+                This graph shows how the workloads are currently distributed among the edge data centers. Each bar represents a location, and the stacked segments show the number of each workload type assigned.
+            </p>
+            <div class="chart-container">
+                <canvas id="workloadDistributionChart"></canvas>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Workload Movement Summary</h2>
+            <p class="text-gray-600 mb-6">
+                Detailed explanation of how workloads were moved in the last simulation step.
+            </p>
+            <div id="movement-summary" class="text-gray-700">
+                <p>Click "Simulate Energy Change & Move Workloads" to see the initial distribution and subsequent movements.</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Explanation for a Non-Technical Audience</h2>
+            <p class="text-gray-700 mb-4">
+                Imagine our computer centers are like factories that need electricity to run. Some of these factories (data centers) can get their power from clean sources like wind and sun, while others rely on the regular power grid.
+            </p>
+            <p class="text-gray-700 mb-4">
+                We have different types of "jobs" (workloads) like training AI, backing up data, or making videos. These jobs need different amounts of "oomph" (resources like computing power or special graphics chips).
+            </p>
+            <p class="text-gray-700 mb-4">
+                This simulator shows how we intelligently move these jobs around. When the wind blows strongly or the sun shines brightly, we try to send as many jobs as possible to the factories that are powered by that clean energy. This helps us use less "dirty" energy and be kinder to our planet! The goal is always to find the greenest spot for each job.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Explanation for a Technical Audience</h2>
+            <p class="text-gray-700 mb-4">
+                This prototype demonstrates a simplified intelligent workload scheduling mechanism for Kubernetes-based container workloads across a distributed edge infrastructure. The primary objective is to minimize carbon footprint by dynamically allocating workloads to data centers with higher renewable energy availability.
+            </p>
+            <p class="text-gray-700 mb-4">
+                Each edge location is characterized by its server capacity, GPU presence, and energy sources. Workloads (AI Training, Data Backup, Video Rendering) have distinct resource fingerprints (CPU, Memory, I/O, GPU demands). The simulation iteratively:
+            </p>
+            <ul class="list-disc pl-5 text-gray-700 mb-4">
+                <li class="mb-1">Simulates fluctuating renewable energy availability at each location.</li>
+                <li class="mb-1">Calculates a 'sustainability score' for each location, prioritizing renewable sources. GPU-intensive workloads (AI Training, Video Rendering) are preferentially routed to GPU-enabled locations.</li>
+                <li class="mb-1">Employs a greedy assignment algorithm to distribute workloads, attempting to fill capacity at the most sustainable and suitable locations first.</li>
+            </ul>
+            <p class="text-gray-700">
+                The visualization provides real-time updates on workload distribution, enabling observation of the scheduling logic in action as environmental conditions (simulated energy availability) change. This approach aims to achieve carbon-aware workload orchestration, a critical aspect of sustainable edge computing.
+            </p>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Data Definitions ---
+            const workloadTypes = [
+                { name: 'AI Training', demand: 10, color: '#4c51bf', requiresGpu: true }, // indigo-700
+                { name: 'Data Backup', demand: 15, color: '#10b981', requiresGpu: false }, // emerald-500
+                { name: 'Video Rendering', demand: 8, color: '#ef4444', requiresGpu: true } // red-500
+            ];
+
+            let edgeLocations = [
+                { name: 'Rostock', servers: 15, gpus: false, energySources: ['Wind'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Paderborn', servers: 12, gpus: true, energySources: ['Wind', 'Solar', 'Bio'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Munich', servers: 10, gpus: true, energySources: ['Solar'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Stuttgart', servers: 18, gpus: true, energySources: ['Solar', 'Wind'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Frankfurt', servers: 20, gpus: true, energySources: ['Conventional Grid'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Leipzig', servers: 14, gpus: false, energySources: ['Wind'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Düsseldorf', servers: 16, gpus: false, energySources: ['Wind', 'Solar', 'Bio'], currentWorkloads: {}, energyAvailability: {} }
+            ];
+
+            // Chart instance
+            let workloadDistributionChart;
+
+            // --- Helper Functions ---
+
+            /**
+             * Generates a random float within a specified range.
+             * @param {number} min - The minimum value (inclusive).
+             * @param {number} max - The maximum value (inclusive).
+             * @returns {number} A random float.
+             */
+            function getRandomFloat(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            /**
+             * Simulates renewable energy availability for each location based on its sources.
+             * Availability is a percentage (0-1).
+             */
+            function simulateEnergyAvailability() {
+                edgeLocations.forEach(location => {
+                    location.energyAvailability = {};
+                    location.energySources.forEach(source => {
+                        let availability;
+                        switch (source) {
+                            case 'Wind':
+                                availability = getRandomFloat(0.4, 0.95); // High variability
+                                break;
+                            case 'Solar':
+                                availability = getRandomFloat(0.1, 0.9); // Low at night, high during day
+                                break;
+                            case 'Bio':
+                                availability = getRandomFloat(0.7, 0.85); // More stable
+                                break;
+                            case 'Conventional Grid':
+                                availability = 1.0; // Always available, but less sustainable
+                                break;
+                            default:
+                                availability = 0.5;
+                        }
+                        location.energyAvailability[source] = parseFloat(availability.toFixed(2));
+                    });
+                });
+            }
+
+            /**
+             * Initializes edge locations with initial workload counts to zero.
+             */
+            function initializeEdgeLocations() {
+                edgeLocations.forEach(location => {
+                    workloadTypes.forEach(type => {
+                        location.currentWorkloads[type.name] = 0;
+                    });
+                });
+            }
+
+            // --- UI Rendering Functions ---
+
+            /**
+             * Renders the edge location status cards in the UI, including current energy availability.
+             */
+            function renderEdgeLocationsStatus() {
+                const container = document.getElementById('edge-locations-status');
+                container.innerHTML = ''; // Clear previous content
+
+                edgeLocations.forEach(location => {
+                    const locationCard = document.createElement('div');
+                    locationCard.className = 'card p-4 bg-lime-50 border border-lime-200';
+                    locationCard.innerHTML = `
+                        <h3 class="text-xl font-bold text-lime-700 mb-2">${location.name}</h3>
+                        <p class="text-gray-700 text-sm mb-1">Servers: <span class="font-semibold">${location.servers}</span></p>
+                        <p class="text-gray-700 text-sm mb-1">GPU Accelerators: <span class="font-semibold">${location.gpus ? 'Yes' : 'No'}</span></p>
+                        <p class="text-gray-700 text-sm mb-1">Energy Sources: <span class="font-semibold">${location.energySources.join(', ')}</span></p>
+                        <div class="mt-3 text-sm">
+                            <h4 class="font-semibold text-gray-600">Current Energy Availability:</h4>
+                            ${Object.entries(location.energyAvailability).map(([source, availability]) => `
+                                <p class="ml-2">${source}: <span class="font-medium text-green-700">${(availability * 100).toFixed(0)}%</span></p>
+                            `).join('')}
+                        </div>
+                    `;
+                    container.appendChild(locationCard);
+                });
+            }
+
+            /**
+             * Renders or updates the Workload Distribution Chart.
+             */
+            function renderWorkloadDistributionChart() {
+                const ctx = document.getElementById('workloadDistributionChart').getContext('2d');
+
+                const labels = edgeLocations.map(loc => loc.name);
+                const datasets = workloadTypes.map(type => {
+                    return {
+                        label: type.name,
+                        data: edgeLocations.map(loc => loc.currentWorkloads[type.name] || 0),
+                        backgroundColor: type.color,
+                        borderColor: type.color,
+                        borderWidth: 1
+                    };
+                });
+
+                if (workloadDistributionChart) {
+                    workloadDistributionChart.data.labels = labels;
+                    workloadDistributionChart.data.datasets = datasets;
+                    workloadDistributionChart.update();
+                } else {
+                    workloadDistributionChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: false,
+                                    text: 'Workload Distribution'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Edge Location'
+                                    }
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Number of Workloads'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            /**
+             * Updates the workload movement summary display.
+             * @param {Object} summary - An object containing details of workload assignments.
+             */
+            function updateMovementSummary(summary) {
+                const summaryDiv = document.getElementById('movement-summary');
+                let html = '<h4 class="font-semibold text-lg mb-2">Workload Assignment Details:</h4>';
+                if (Object.keys(summary).length === 0) {
+                    html += '<p>No workloads were assigned in this simulation step.</p>';
+                } else {
+                    html += '<ul class="list-disc pl-5">';
+                    for (const locationName in summary) {
+                        html += `<li class="mb-1"><span class="font-bold">${locationName}:</span>`;
+                        const workloads = summary[locationName];
+                        if (Object.keys(workloads).length === 0 || Object.values(workloads).every(count => count === 0)) {
+                            html += ` No workloads assigned.</li>`;
+                        } else {
+                            html += `<ul>`;
+                            for (const workloadType in workloads) {
+                                if (workloads[workloadType] > 0) {
+                                    html += `<li class="ml-4">${workloadType}: ${workloads[workloadType]} units</li>`;
+                                }
+                            }
+                            html += `</ul></li>`;
+                        }
+                    }
+                    html += '</ul>';
+                }
+                summaryDiv.innerHTML = html;
+            }
+
+            // --- Workload Movement Logic ---
+
+            /**
+             * Calculates a sustainability score for a given location.
+             * Higher score means more sustainable energy availability.
+             * @param {Object} location - The edge location object.
+             * @returns {number} The sustainability score.
+             */
+            function calculateSustainabilityScore(location) {
+                let score = 0;
+                let totalSustainableSources = 0;
+                location.energySources.forEach(source => {
+                    const availability = location.energyAvailability[source] || 0;
+                    if (source === 'Wind') {
+                        score += availability * 1.0; // High weight for wind
+                        totalSustainableSources++;
+                    } else if (source === 'Solar') {
+                        score += availability * 0.9; // High weight for solar
+                        totalSustainableSources++;
+                    } else if (source === 'Bio') {
+                        score += availability * 0.8; // Good weight for bio
+                        totalSustainableSources++;
+                    }
+                    // Conventional Grid contributes very little to sustainability score
+                });
+                return totalSustainableSources > 0 ? score / totalSustainableSources : 0;
+            }
+
+            /**
+             * Distributes workloads across locations based on sustainability and resource needs.
+             * @returns {Object} A summary of workload assignments.
+             */
+            function distributeWorkloads() {
+                // Reset current workloads for all locations
+                edgeLocations.forEach(loc => {
+                    workloadTypes.forEach(type => {
+                        loc.currentWorkloads[type.name] = 0;
+                    });
+                });
+
+                const schedulingSummary = {};
+                const remainingWorkloads = {};
+                workloadTypes.forEach(type => {
+                    remainingWorkloads[type.name] = type.demand;
+                });
+
+                // Create a mutable copy of locations for sorting and capacity management
+                const mutableLocations = JSON.parse(JSON.stringify(edgeLocations));
+
+                // First pass: Prioritize GPU-requiring workloads to GPU-enabled locations
+                workloadTypes.filter(wt => wt.requiresGpu).forEach(type => {
+                    let typeRemaining = remainingWorkloads[type.name];
+                    if (typeRemaining === 0) return;
+
+                    // Sort GPU-enabled locations by sustainability score (descending)
+                    const gpuLocations = mutableLocations
+                        .filter(loc => loc.gpus)
+                        .sort((a, b) => calculateSustainabilityScore(b) - calculateSustainabilityScore(a));
+
+                    for (const location of gpuLocations) {
+                        const availableCapacity = location.servers - Object.values(location.currentWorkloads).reduce((sum, val) => sum + val, 0);
+                        if (availableCapacity > 0 && typeRemaining > 0) {
+                            const assigned = Math.min(typeRemaining, availableCapacity);
+                            location.currentWorkloads[type.name] += assigned;
+                            typeRemaining -= assigned;
+
+                            if (!schedulingSummary[location.name]) {
+                                schedulingSummary[location.name] = {};
+                            }
+                            schedulingSummary[location.name][type.name] = (schedulingSummary[location.name][type.name] || 0) + assigned;
+                        }
+                        if (typeRemaining === 0) break;
+                    }
+                    remainingWorkloads[type.name] = typeRemaining; // Update remaining after GPU pass
+                });
+
+                // Second pass: Distribute remaining workloads (including non-GPU requiring ones)
+                // Sort all locations by sustainability score (descending)
+                mutableLocations.sort((a, b) => calculateSustainabilityScore(b) - calculateSustainabilityScore(a));
+
+                workloadTypes.forEach(type => {
+                    let typeRemaining = remainingWorkloads[type.name];
+                    if (typeRemaining === 0) return;
+
+                    for (const location of mutableLocations) {
+                        // Skip if this workload requires GPU and this location doesn't have it (already handled in first pass)
+                        if (type.requiresGpu && !location.gpus) continue;
+
+                        const availableCapacity = location.servers - Object.values(location.currentWorkloads).reduce((sum, val) => sum + val, 0);
+                        if (availableCapacity > 0 && typeRemaining > 0) {
+                            const assigned = Math.min(typeRemaining, availableCapacity);
+                            location.currentWorkloads[type.name] += assigned;
+                            typeRemaining -= assigned;
+
+                            if (!schedulingSummary[location.name]) {
+                                schedulingSummary[location.name] = {};
+                            }
+                            schedulingSummary[location.name][type.name] = (schedulingSummary[location.name][type.name] || 0) + assigned;
+                        }
+                        if (typeRemaining === 0) break;
+                    }
+                    remainingWorkloads[type.name] = typeRemaining; // Update remaining
+                });
+
+                // Update the global edgeLocations array with the new workload assignments
+                edgeLocations = mutableLocations;
+
+                return schedulingSummary;
+            }
+
+            /**
+             * Runs a simulation step: simulates energy, distributes workloads, and updates UI.
+             */
+            function runSimulationStep() {
+                simulateEnergyAvailability();
+                const summary = distributeWorkloads();
+                renderEdgeLocationsStatus();
+                renderWorkloadDistributionChart();
+                updateMovementSummary(summary);
+            }
+
+            // --- Event Listeners and Initial Setup ---
+
+            // Simulate Movement button click handler
+            document.getElementById('simulate-movement-button').addEventListener('click', runSimulationStep);
+
+            // Initial setup on page load
+            initializeEdgeLocations();
+            runSimulationStep(); // Run initial simulation to populate charts
+        });
+    </script>
+</body>
+</html>
