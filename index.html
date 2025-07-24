@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainable Edge Computing Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Darker text for readability */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            text-align: center;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* More prominent shadow */
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        .nav-button {
+            display: block;
+            width: 100%;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            background-color: #4f46e5; /* Indigo-600 */
+            color: white;
+            font-weight: bold;
+            font-size: 1.125rem; /* text-lg */
+            border-radius: 0.5rem; /* rounded-lg */
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .nav-button:hover {
+            background-color: #4338ca; /* Indigo-700 */
+            transform: translateY(-2px);
+        }
+        .nav-button:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container">
+        <header class="py-8">
+            <h1 class="text-5xl font-extrabold text-indigo-800 mb-6">Sustainable Edge Computing Platform</h1>
+            <p class="text-xl text-gray-700 mb-10">
+                Explore interactive simulators demonstrating intelligent workload management for a greener future.
+            </p>
+        </header>
+
+        <section class="card">
+            <h2 class="text-3xl font-bold text-indigo-700 mb-8">Choose Your Simulation</h2>
+            <nav class="grid grid-cols-1 gap-4">
+                <a href="sustainable-edge-simulator.html" class="nav-button bg-indigo-600 hover:bg-indigo-700">
+                    Sustainable Workload Scheduling
+                    <p class="text-sm opacity-90 mt-1">Energy availability & spot pricing</p>
+                </a>
+                <a href="workload-fingerprint-visualizer.html" class="nav-button bg-teal-600 hover:bg-teal-700">
+                    Container Workload Fingerprints
+                    <p class="text-sm opacity-90 mt-1">Resource demands visualization</p>
+                </a>
+                <a href="sustainable-workload-movement.html" class="nav-button bg-green-600 hover:bg-green-700">
+                    Sustainable Workload Movement
+                    <p class="text-sm opacity-90 mt-1">Dynamic redistribution based on green energy</p>
+                </a>
+            </nav>
+        </section>
+    </div>
+</body>
+</html>
