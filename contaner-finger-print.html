@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container Workload Fingerprint Visualizer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom styles for better aesthetics and responsiveness */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Darker text for readability */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px; /* Fixed height for radar charts */
+            width: 100%;
+        }
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .grid-cols-2 {
+                grid-template-columns: 1fr; /* Stack columns on small screens */
+            }
+            .chart-container {
+                height: 250px; /* Slightly smaller height on mobile */
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container">
+        <header class="text-center py-8">
+            <h1 class="text-4xl font-extrabold text-teal-700 mb-4">Container Workload Fingerprint Visualizer</h1>
+            <p class="text-lg text-gray-600">
+                Understand the resource demands of different Kubernetes container workloads to enable intelligent scheduling for a lower carbon footprint.
+            </p>
+        </header>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-teal-600 mb-4">Workload Fingerprints</h2>
+            <p class="text-gray-600 mb-6">
+                Each "fingerprint" below illustrates the typical relative resource consumption (CPU, Memory, I/O, GPU) for a specific container workload type.
+                Understanding these demands helps in allocating workloads to Kubernetes servers that can meet their needs efficiently,
+                especially when optimizing for environmental factors like carbon footprint.
+            </p>
+            <div id="workload-fingerprints" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Workload fingerprint charts will be dynamically added here by JavaScript -->
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-teal-600 mb-4">Resource Definitions</h2>
+            <ul class="list-disc pl-5 text-gray-700">
+                <li class="mb-2"><span class="font-semibold">CPU:</span> Central Processing Unit utilization. High CPU workloads require powerful processors.</li>
+                <li class="mb-2"><span class="font-semibold">Memory:</span> Random Access Memory consumption. High memory workloads need ample RAM.</li>
+                <li class="mb-2"><span class="font-semibold">I/O:</span> Input/Output operations (disk reads/writes, network traffic). High I/O workloads benefit from fast storage and network.</li>
+                <li class="mb-2"><span class="font-semibold">GPU:</span> Graphics Processing Unit utilization. Essential for parallel processing tasks like AI/ML.</li>
+            </ul>
+            <p class="text-gray-600 mt-4">
+                By matching workload fingerprints to server capabilities and energy sources, we can minimize the overall carbon footprint.
+                For instance, an AI Training workload (high GPU demand) should ideally be scheduled on a server with GPU accelerators powered by renewable energy.
+            </p>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Define the five workload types and their approximate resource "fingerprints" (relative values 0-100)
+            const workloadFingerprints = [
+                {
+                    name: 'AI Training',
+                    description: 'Intensive computational tasks for machine learning model development.',
+                    data: { cpu: 90, memory: 80, io: 60, gpu: 95 },
+                    color: 'rgba(76, 81, 191, 0.7)', // indigo-700
+                    borderColor: 'rgba(76, 81, 191, 1)'
+                },
+                {
+                    name: 'Data Backup',
+                    description: 'Transferring and storing large volumes of data, often with high sequential I/O.',
+                    data: { cpu: 30, memory: 40, io: 90, gpu: 5 },
+                    color: 'rgba(16, 185, 129, 0.7)', // emerald-500
+                    borderColor: 'rgba(16, 185, 129, 1)'
+                },
+                {
+                    name: 'API Services',
+                    description: 'Handling numerous small requests, requiring quick response times.',
+                    data: { cpu: 60, memory: 70, io: 40, gpu: 10 },
+                    color: 'rgba(245, 158, 11, 0.7)', // amber-500
+                    borderColor: 'rgba(245, 158, 11, 1)'
+                },
+                {
+                    name: 'Video Rendering',
+                    description: 'Processing and encoding video files, often CPU and GPU intensive.',
+                    data: { cpu: 85, memory: 75, io: 50, gpu: 70 },
+                    color: 'rgba(239, 68, 68, 0.7)', // red-500
+                    borderColor: 'rgba(239, 68, 68, 1)'
+                },
+                {
+                    name: 'Database Indexing',
+                    description: 'Optimizing database performance by building and updating indexes, often I/O and memory intensive.',
+                    data: { cpu: 50, memory: 65, io: 80, gpu: 5 },
+                    color: 'rgba(6, 182, 212, 0.7)', // cyan-500
+                    borderColor: 'rgba(6, 182, 212, 1)'
+                }
+            ];
+
+            const resourceLabels = ['CPU', 'Memory', 'I/O', 'GPU'];
+
+            /**
+             * Creates and appends a radar chart for a given workload fingerprint.
+             * @param {Object} workload - The workload object containing name, description, data, and colors.
+             */
+            function createWorkloadChart(workload) {
+                const container = document.getElementById('workload-fingerprints');
+
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card p-4 bg-white border border-gray-200 flex flex-col items-center';
+
+                const title = document.createElement('h3');
+                title.className = 'text-xl font-bold text-teal-700 mb-2 text-center';
+                title.textContent = workload.name;
+                cardDiv.appendChild(title);
+
+                const description = document.createElement('p');
+                description.className = 'text-gray-600 text-sm mb-4 text-center';
+                description.textContent = workload.description;
+                cardDiv.appendChild(description);
+
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'chart-container';
+                const canvas = document.createElement('canvas');
+                canvas.id = `chart-${workload.name.toLowerCase().replace(/\s/g, '-')}`;
+                chartContainer.appendChild(canvas);
+                cardDiv.appendChild(chartContainer);
+
+                container.appendChild(cardDiv);
+
+                const ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: resourceLabels,
+                        datasets: [{
+                            label: 'Relative Demand (%)',
+                            data: [
+                                workload.data.cpu,
+                                workload.data.memory,
+                                workload.data.io,
+                                workload.data.gpu
+                            ],
+                            backgroundColor: workload.color,
+                            borderColor: workload.borderColor,
+                            borderWidth: 2,
+                            pointBackgroundColor: workload.borderColor,
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: workload.borderColor
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false // Hide dataset label
+                            },
+                            title: {
+                                display: false,
+                                text: `${workload.name} Fingerprint`
+                            }
+                        },
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    display: true
+                                },
+                                suggestedMin: 0,
+                                suggestedMax: 100,
+                                ticks: {
+                                    display: false // Hide the tick labels on the radar axis
+                                },
+                                pointLabels: {
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    color: '#475569' // slate-600
+                                },
+                                grid: {
+                                    color: 'rgba(203, 213, 225, 0.5)' // slate-300 with transparency
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Render charts for all workload fingerprints
+            workloadFingerprints.forEach(fp => createWorkloadChart(fp));
+        });
+    </script>
+</body>
+</html>
