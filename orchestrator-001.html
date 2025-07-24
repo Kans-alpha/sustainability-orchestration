@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sustainable Edge Computing Platform Prototype</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chosen Palette: "Green Tech" - A calm palette using slate, emerald, and sky blue to evoke technology, sustainability, and clarity. -->
+
+    <!-- Application Structure Plan: A dashboard-style single-page application is used to present the complex, interconnected data in an intuitive way. The structure is thematic, divided into: 1. Real-time Environmental & Market Data, 2. Interactive Workload Scheduling Simulation, and 3. Impact & Savings Analysis. This flow guides the user from the 'problem' (volatile energy/cost) to the 'solution' (intelligent scheduling) and finally to the 'benefit' (cost/CO2 savings). This is more effective than a linear report, as it allows users to see the cause-and-effect of their choices in real-time, which is crucial for a customer-testing prototype. -->
+
+    <!-- Visualization & Content Choices:
+
+        - Report Info: Energy generation/weather/market price -> Goal: Inform on real-time conditions -> Viz: Line charts and KPI cards -> Interaction: Hover for details, filters update charts -> Justification: Line charts are standard for time-series data, providing an intuitive view of volatility. KPIs offer at-a-glance summaries. -> Library: Chart.js
+
+        - Report Info: Workload scheduling -> Goal: Explain the core platform logic -> Viz: Gantt-style horizontal bar chart -> Interaction: Toggle button to switch between 'Standard' and 'Intelligent' scheduling, which visually rearranges workloads on the timeline. -> Justification: Directly visualizes the platform's key value proposition. The interactive toggle creates a powerful "Aha!" moment for the user, demonstrating the benefit of the intelligent algorithm. -> Library: Chart.js
+
+        - Report Info: Cost/CO2 impact -> Goal: Compare and prove value -> Viz: Grouped Bar charts -> Interaction: Charts update based on selected scheduling mode. -> Justification: Bar charts are the clearest way to show a direct comparison between two distinct scenarios (Standard vs. Intelligent). -> Library: Chart.js
+
+        - Report Info: System Architecture -> Goal: Organize and explain components -> Viz: Diagram built with styled HTML/CSS divs. -> Interaction: Hover over components for tooltips. -> Justification: Avoids external graphics or complex libraries for a simple, clear, and lightweight representation of the system flow. -> Library/Method: HTML/Tailwind CSS.
+
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+
+        body {
+
+            font-family: 'Inter', sans-serif;
+
+            background-color: #f8fafc; /* slate-50 */
+
+        }
+
+        .chart-container {
+
+            position: relative;
+
+            width: 100%;
+
+            height: 280px;
+
+            max-height: 300px;
+
+        }
+
+        @media (min-width: 768px) {
+
+            .chart-container {
+
+                height: 320px;
+
+                max-height: 350px;
+
+            }
+
+        }
+
+        .kpi-value {
+
+            font-size: 2.25rem;
+
+            line-height: 2.5rem;
+
+        }
+
+        .kpi-label {
+
+            font-size: 0.875rem;
+
+            line-height: 1.25rem;
+
+        }
+
+        .custom-tooltip {
+
+            position: absolute;
+
+            background: rgba(0, 0, 0, 0.8);
+
+            color: white;
+
+            padding: 5px 10px;
+
+            border-radius: 5px;
+
+            font-size: 12px;
+
+            pointer-events: none;
+
+            opacity: 0;
+
+            transition: opacity 0.2s;
+
+            z-index: 100;
+
+        }
+
+    </style>
+
+</head>
+
+<body class="text-slate-800">
+
+ 
+
+    <div id="tooltip" class="custom-tooltip"></div>
+
+ 
+
+    <div class="container mx-auto p-4 md:p-8">
+
+ 
+
+        <header class="text-center mb-10">
+
+            <h1 class="text-4xl md:text-5xl font-bold text-emerald-700">Sustainable Edge Computing</h1>
+
+            <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">An interactive prototype demonstrating intelligent workload scheduling based on renewable energy availability and spot market pricing.</p>
+
+        </header>
+
+ 
+
+        <main>
+
+            <!-- CONTROLS SECTION -->
+
+            <section id="controls" class="mb-8 p-6 bg-white rounded-xl shadow-lg">
+
+                <h2 class="text-2xl font-bold mb-4 text-center">Simulation Controls</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+
+                    <div>
+
+                        <label for="location-select" class="block text-sm font-medium text-slate-700 mb-2">Energy Source Location:</label>
+
+                        <select id="location-select" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500">
+
+                            <option value="wind" selected>Wind Farm (North Sea)</option>
+
+                            <option value="solar">Solar Park (Bavaria)</option>
+
+                            <option value="paderborn">Paderborn (Mixed)</option>
+
+                            <option value="frankfurt">Frankfurt (Urban Grid)</option>
+
+                            <option value="leipzig">Leipzig (Mixed)</option>
+
+                            <option value="stuttgart">Stuttgart (Solar Focus)</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="text-center">
+
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Scheduling Mode:</label>
+
+                        <div class="inline-flex rounded-lg shadow-sm">
+
+                            <button id="mode-intelligent" class="px-6 py-2 text-sm font-medium border border-emerald-600 bg-emerald-600 text-white rounded-l-lg">Intelligent</button>
+
+                            <button id="mode-standard" class="px-6 py-2 text-sm font-medium border border-slate-300 bg-white text-slate-700 rounded-r-lg">Standard</button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+ 
+
+            <!-- DASHBOARD GRID -->
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+ 
+
+                <!-- LEFT COLUMN: REAL-TIME DATA -->
+
+                <div class="lg:col-span-1 space-y-6">
+
+                    <div class="p-6 bg-white rounded-xl shadow-lg">
+
+                        <h3 class="text-xl font-bold mb-4">Live Environment & Market</h3>
+
+                        <div class="space-y-4">
+
+                            <div id="kpi-weather" class="flex items-center space-x-4">
+
+                                <span id="weather-icon" class="text-5xl"></span>
+
+                                <div>
+
+                                    <p id="weather-desc" class="kpi-label text-slate-500"></p>
+
+                                    <p id="weather-value" class="text-2xl font-semibold"></p>
+
+                                </div>
+
+                            </div>
+
+                            <div class="flex justify-between items-baseline p-3 bg-slate-50 rounded-lg">
+
+                                <p class="kpi-label text-slate-500">Energy Generation</p>
+
+                                <p id="kpi-generation" class="text-2xl font-semibold text-emerald-600"></p>
+
+                            </div>
+
+                            <div class="flex justify-between items-baseline p-3 bg-slate-50 rounded-lg">
+
+                                <p class="kpi-label text-slate-500">Spot Market Price</p>
+
+                                <p id="kpi-price" class="text-2xl font-semibold text-sky-700"></p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="p-6 bg-white rounded-xl shadow-lg">
+
+                        <h3 class="text-xl font-bold mb-2">24h Energy Forecast</h3>
+
+                        <p class="text-sm text-slate-500 mb-4">Projected generation vs. market price.</p>
+
+                        <div class="chart-container">
+
+                            <canvas id="energyChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+ 
+
+                <!-- MIDDLE COLUMN: SCHEDULING -->
+
+                <div class="lg:col-span-2 space-y-6">
+
+                    <div class="p-6 bg-white rounded-xl shadow-lg h-full flex flex-col">
+
+                        <h3 class="text-xl font-bold mb-2">Workload Scheduling Timeline (Next 24h)</h3>
+
+                        <p id="scheduling-description" class="text-sm text-slate-500 mb-4">Intelligently placing workloads in low-cost, high-generation windows.</p>
+
+                        <div class="flex-grow chart-container">
+
+                            <canvas id="schedulingChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+ 
+
+            </div>
+
+ 
+
+            <!-- BOTTOM ROW: IMPACT & ARCHITECTURE -->
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+
+                <!-- IMPACT ANALYSIS -->
+
+                <div class="lg:col-span-2 p-6 bg-white rounded-xl shadow-lg">
+
+                    <h2 class="text-2xl font-bold mb-4">Impact Analysis: <span id="mode-label" class="text-emerald-600">Intelligent</span> vs. Standard</h2>
+
+                    <p class="text-sm text-slate-500 mb-6">This section quantifies the financial and environmental benefits of the selected scheduling mode. Toggle the controls above to see the data update in real-time, demonstrating the value of aligning compute tasks with renewable energy availability.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+
+                         <div class="md:col-span-1 space-y-4">
+
+                            <div class="p-4 bg-emerald-50 text-emerald-800 rounded-lg text-center">
+
+                                <p class="kpi-label">Estimated Cost</p>
+
+                                <p id="impact-cost" class="kpi-value font-bold"></p>
+
+                            </div>
+
+                             <div class="p-4 bg-sky-50 text-sky-800 rounded-lg text-center">
+
+                                <p class="kpi-label">CO₂ Emissions</p>
+
+                                <p id="impact-co2" class="kpi-value font-bold"></p>
+
+                            </div>
+
+                         </div>
+
+                         <div class="md:col-span-2">
+
+                             <div class="chart-container h-64 md:h-80">
+
+                                 <canvas id="impactChart"></canvas>
+
+                             </div>
+
+                         </div>
+
+                    </div>
+
+                </div>
+
+               
+
+                <!-- ARCHITECTURE -->
+
+                <div class="lg:col-span-1 p-6 bg-white rounded-xl shadow-lg">
+
+                    <h2 class="text-2xl font-bold mb-4">System Architecture</h2>
+
+                     <p class="text-sm text-slate-500 mb-6">A simplified view of the platform components. The scheduler is the core, orchestrating workloads based on data from various sources to optimize for cost and sustainability.</p>
+
+                    <div class="space-y-2 text-center font-medium">
+
+                        <div class="p-3 border-2 border-emerald-500 rounded-lg bg-emerald-50" data-tooltip="Real-time data from wind turbines or solar panels.">Renewable Energy Source</div>
+
+                        <div class="text-2xl text-slate-400">↓</div>
+
+                        <div class="p-3 border-2 border-slate-500 rounded-lg bg-slate-50" data-tooltip="On-site bare metal servers running a Kubernetes cluster.">Edge Datacenter (10 Racks)</div>
+
+                        <div class="text-2xl text-slate-400">↓</div>
+
+                        <div class="p-4 border-2 border-sky-600 rounded-lg bg-sky-50 relative" data-tooltip="The 'brain' of the system. Analyzes all inputs to make scheduling decisions.">
+
+                            <span class="font-bold text-sky-800">Intelligent Scheduler</span>
+
+                            <div class="absolute top-1/2 -left-20 text-xs text-slate-500 w-16">Weather Data →</div>
+
+                            <div class="absolute top-1/2 -right-24 text-xs text-slate-500 w-20">← Spot Market Prices</div>
+
+                        </div>
+
+                        <div class="text-2xl text-slate-400">↓</div>
+
+                        <div class="p-3 border-2 border-slate-500 rounded-lg bg-slate-50" data-tooltip="Containerized applications (e.g., AI/ML, data processing) to be executed.">Customer Workloads</div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+ 
+
+        </main>
+
+    </div>
+
+ 
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // --- DATA SIMULATION ---
+
+            const SIM_DATA = {
+
+                hours: Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`),
+
+                wind: {
+
+                    name: "Wind Farm (North Sea)",
+
+                    weatherDesc: "Strong Winds, Overcast",
+
+                    weatherVal: "15 m/s",
+
+                    icon: '🌬️',
+
+                    generation: [10, 12, 15, 18, 22, 25, 28, 30, 32, 30, 28, 25, 23, 20, 22, 24, 28, 30, 33, 35, 32, 28, 24, 20],
+
+                    prices: [80, 75, 70, 65, 60, 55, 50, 45, 40, 48, 55, 65, 75, 85, 80, 75, 70, 65, 60, 55, 60, 68, 75, 82]
+
+                },
+
+                solar: {
+
+                    name: "Solar Park (Bavaria)",
+
+                    weatherDesc: "Clear Skies",
+
+                    weatherVal: "22°C",
+
+                    icon: '☀️',
+
+                    generation: [0, 0, 0, 0, 0, 1, 5, 12, 20, 28, 35, 40, 42, 40, 36, 28, 15, 4, 1, 0, 0, 0, 0, 0],
+
+                    prices: [90, 88, 85, 82, 80, 95, 100, 90, 75, 60, 50, 45, 40, 45, 55, 70, 90, 110, 120, 115, 105, 100, 95, 92]
+
+                },
+
+                paderborn: {
+
+                    name: "Paderborn (Mixed)",
+
+                    weatherDesc: "Partly Cloudy",
+
+                    weatherVal: "18°C",
+
+                    icon: '☁️',
+
+                    generation: [5, 6, 8, 10, 12, 15, 18, 20, 22, 20, 18, 15, 12, 10, 8, 10, 12, 15, 18, 20, 15, 10, 8, 6],
+
+                    prices: [70, 68, 65, 62, 60, 58, 55, 52, 50, 55, 60, 65, 70, 75, 72, 68, 65, 60, 58, 55, 60, 65, 68, 70]
+
+                },
+
+                frankfurt: {
+
+                    name: "Frankfurt (Urban Grid)",
+
+                    weatherDesc: "Urban Haze",
+
+                    weatherVal: "25°C",
+
+                    icon: '🏙️',
+
+                    generation: [2, 2, 3, 4, 5, 8, 12, 15, 18, 20, 22, 20, 18, 15, 12, 10, 8, 6, 5, 4, 3, 3, 2, 2],
+
+                    prices: [100, 98, 95, 92, 90, 88, 85, 82, 80, 78, 75, 72, 70, 72, 75, 78, 80, 85, 90, 95, 100, 105, 102, 100]
+
+                },
+
+                leipzig: {
+
+                    name: "Leipzig (Mixed)",
+
+                    weatherDesc: "Light Breeze",
+
+                    weatherVal: "20°C",
+
+                    icon: '🍃',
+
+                    generation: [4, 5, 6, 8, 10, 12, 15, 18, 20, 22, 20, 18, 15, 12, 10, 8, 6, 5, 4, 6, 8, 10, 8, 6],
+
+                    prices: [75, 72, 70, 68, 65, 62, 60, 58, 55, 52, 50, 55, 60, 65, 70, 72, 75, 78, 80, 82, 80, 78, 75, 75]
+
+                },
+
+                stuttgart: {
+
+                    name: "Stuttgart (Solar Focus)",
+
+                    weatherDesc: "Sunny, Warm",
+
+                    weatherVal: "28°C",
+
+                    icon: '☀️',
+
+                    generation: [0, 0, 0, 0, 0, 2, 10, 20, 30, 40, 45, 48, 45, 40, 30, 20, 10, 2, 0, 0, 0, 0, 0, 0],
+
+                    prices: [95, 92, 90, 88, 85, 80, 70, 60, 50, 40, 35, 30, 35, 40, 50, 60, 70, 80, 90, 100, 110, 105, 100, 98]
+
+                },
+
+                workloads: [
+
+                    { name: 'AI Training', duration: 4, demand: 8, color: 'rgba(2, 132, 199, 0.7)' }, // sky-600
+
+                    { name: 'Data Backup', duration: 3, demand: 2, color: 'rgba(107, 114, 128, 0.7)' }, // gray-500
+
+                    { name: 'API Service', duration: 24, demand: 1, color: 'rgba(245, 158, 11, 0.7)' }, // amber-500
+
+                    { name: 'Video Render', duration: 6, demand: 6, color: 'rgba(139, 92, 246, 0.7)' }, // violet-500
+
+                    { name: 'DB Indexing', duration: 2, demand: 4, color: 'rgba(239, 68, 68, 0.7)' }, // red-500
+
+                ]
+
+            };
+
+ 
+
+            // --- STATE MANAGEMENT ---
+
+            let state = {
+
+                location: 'wind',
+
+                mode: 'intelligent', // 'intelligent' or 'standard'
+
+            };
+
+ 
+
+            // --- CHART INSTANCES ---
+
+            let energyChart, schedulingChart, impactChart;
+
+ 
+
+            // --- CHART CONFIGURATION ---
+
+            const chartDefaultOptions = {
+
+                maintainAspectRatio: false,
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+
+                        position: 'bottom',
+
+                        labels: {
+
+                            font: { size: 12 },
+
+                            padding: 20,
+
+                            color: '#475569' // slate-600
+
+                        }
+
+                    }
+
+                },
+
+                scales: {
+
+                    x: {
+
+                        ticks: { color: '#64748b' }, // slate-500
+
+                        grid: { display: false }
+
+                    },
+
+                    y: {
+
+                        ticks: { color: '#64748b' }, // slate-500
+
+                        grid: { color: '#e2e8f0' } // slate-200
+
+                    }
+
+                }
+
+            };
+
+ 
+
+            // --- DOM ELEMENTS ---
+
+            const locationSelect = document.getElementById('location-select');
+
+            const modeIntelligentBtn = document.getElementById('mode-intelligent');
+
+            const modeStandardBtn = document.getElementById('mode-standard');
+
+ 
+
+            // --- INITIALIZATION ---
+
+            function init() {
+
+                initEnergyChart();
+
+                initSchedulingChart();
+
+                initImpactChart();
+
+                setupEventListeners();
+
+                updateDashboard();
+
+            }
+
+ 
+
+            function setupEventListeners() {
+
+                locationSelect.addEventListener('change', (e) => {
+
+                    state.location = e.target.value;
+
+                    updateDashboard();
+
+                });
+
+ 
+
+                modeIntelligentBtn.addEventListener('click', () => setMode('intelligent'));
+
+                modeStandardBtn.addEventListener('click', () => setMode('standard'));
+
+ 
+
+                document.querySelectorAll('[data-tooltip]').forEach(elem => {
+
+                    const tooltip = document.getElementById('tooltip');
+
+                    elem.addEventListener('mouseenter', e => {
+
+                        tooltip.textContent = elem.getAttribute('data-tooltip');
+
+                        tooltip.style.opacity = '1';
+
+                    });
+
+                    elem.addEventListener('mousemove', e => {
+
+                        tooltip.style.left = e.pageX + 10 + 'px';
+
+                        tooltip.style.top = e.pageY + 10 + 'px';
+
+                    });
+
+                    elem.addEventListener('mouseleave', () => {
+
+                        tooltip.style.opacity = '0';
+
+                    });
+
+                });
+
+            }
+
+ 
+
+            function setMode(newMode) {
+
+                state.mode = newMode;
+
+                if (newMode === 'intelligent') {
+
+                    modeIntelligentBtn.classList.remove('bg-white', 'text-slate-700');
+
+                    modeIntelligentBtn.classList.add('bg-emerald-600', 'text-white');
+
+                    modeStandardBtn.classList.remove('bg-emerald-600', 'text-white');
+
+                    modeStandardBtn.classList.add('bg-white', 'text-slate-700');
+
+                } else {
+
+                    modeStandardBtn.classList.remove('bg-white', 'text-slate-700');
+
+                    modeStandardBtn.classList.add('bg-emerald-600', 'text-white');
+
+                    modeIntelligentBtn.classList.remove('bg-emerald-600', 'text-white');
+
+                    modeIntelligentBtn.classList.add('bg-white', 'text-slate-700');
+
+                }
+
+                updateDashboard();
+
+            }
+
+ 
+
+            // --- CHART CREATION FUNCTIONS ---
+
+            function initEnergyChart() {
+
+                const ctx = document.getElementById('energyChart').getContext('2d');
+
+                energyChart = new Chart(ctx, {
+
+                    type: 'line',
+
+                    data: { labels: SIM_DATA.hours, datasets: [] },
+
+                    options: { ...chartDefaultOptions,
+
+                        scales: {
+
+                           x: { ticks: { color: '#64748b' }, grid: { display: false } },
+
+                           y1: { type: 'linear', position: 'left', ticks: { color: '#059669' }, grid: { drawOnChartArea: false }, title: { display: true, text: 'Generation (kW)', color: '#059669'} },
+
+                           y2: { type: 'linear', position: 'right', ticks: { color: '#0284c7' }, grid: { display: false }, title: { display: true, text: 'Price (€/MWh)', color: '#0284c7'} },
+
+                        }
+
+                    }
+
+                });
+
+            }
+
+ 
+
+            function initSchedulingChart() {
+
+                const ctx = document.getElementById('schedulingChart').getContext('2d');
+
+                schedulingChart = new Chart(ctx, {
+
+                    type: 'bar',
+
+                    data: { labels: SIM_DATA.workloads.map(w => w.name), datasets: [] },
+
+                    options: { ...chartDefaultOptions,
+
+                        indexAxis: 'y',
+
+                        scales: {
+
+                            x: { stacked: true, min: 0, max: 24, title: { display: true, text: 'Hour of the Day' }, grid: { color: '#e2e8f0' } },
+
+                            y: { stacked: true, ticks: { color: '#475569'}, grid: { display: false } }
+
+                        },
+
+                        plugins: {
+
+                            legend: { display: false },
+
+                            tooltip: {
+
+                                callbacks: {
+
+                                    label: function(context) {
+
+                                        const dataset = context.dataset;
+
+                                        const value = context.raw;
+
+                                        return `${dataset.label}: ${value.x[1] - value.x[0]} hours (demand: ${value.demand})`;
+
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                });
+
+            }
+
+ 
+
+            function initImpactChart() {
+
+                const ctx = document.getElementById('impactChart').getContext('2d');
+
+                impactChart = new Chart(ctx, {
+
+                    type: 'bar',
+
+                    data: {
+
+                        labels: ['Total Cost (€)', 'Total CO₂ (kg)'],
+
+                        datasets: []
+
+                    },
+
+                    options: { ...chartDefaultOptions,
+
+                         plugins: { legend: { position: 'top' } },
+
+                         scales: { y: { beginAtZero: true } }
+
+                    }
+
+                });
+
+            }
+
+ 
+
+            // --- CORE UPDATE LOGIC ---
+
+            function updateDashboard() {
+
+                const locationData = SIM_DATA[state.location];
+
+                updateKpis(locationData);
+
+                updateEnergyChart(locationData);
+
+                updateSchedulingChart(locationData);
+
+                updateImpact(locationData);
+
+            }
+
+ 
+
+            function updateKpis(locationData) {
+
+                document.getElementById('weather-icon').textContent = locationData.icon;
+
+                document.getElementById('weather-desc').textContent = locationData.weatherDesc;
+
+                document.getElementById('weather-value').textContent = locationData.weatherVal;
+
+                document.getElementById('kpi-generation').textContent = `${locationData.generation[12]} kW`;
+
+                document.getElementById('kpi-price').textContent = `€${locationData.prices[12].toFixed(2)}`;
+
+                document.getElementById('scheduling-description').textContent = state.mode === 'intelligent'
+
+                    ? 'Intelligently placing workloads in low-cost, high-generation windows.'
+
+                    : 'Running workloads on demand, regardless of energy price or source.';
+
+                document.getElementById('mode-label').textContent = state.mode.charAt(0).toUpperCase() + state.mode.slice(1);
+
+            }
+
+ 
+
+            function updateEnergyChart(locationData) {
+
+                energyChart.data.datasets = [
+
+                    {
+
+                        label: 'Generation (kW)',
+
+                        data: locationData.generation,
+
+                        borderColor: 'rgba(16, 185, 129, 0.8)', // emerald-500
+
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+
+                        tension: 0.4,
+
+                        yAxisID: 'y1',
+
+                        fill: true,
+
+                    },
+
+                    {
+
+                        label: 'Price (€/MWh)',
+
+                        data: locationData.prices,
+
+                        borderColor: 'rgba(3, 105, 161, 0.8)', // sky-700
+
+                        backgroundColor: 'rgba(3, 105, 161, 0.1)',
+
+                        tension: 0.4,
+
+                        yAxisID: 'y2',
+
+                    }
+
+                ];
+
+                energyChart.update();
+
+            }
+
+ 
+
+            function updateSchedulingChart(locationData) {
+
+                const scheduledWorkloads = scheduleWorkloads(locationData, state.mode);
+
+                const datasets = scheduledWorkloads.map(workload => ({
+
+                    label: workload.name,
+
+                    data: [{ x: [workload.start, workload.end], y: workload.name, demand: workload.demand }],
+
+                    backgroundColor: workload.color,
+
+                    barPercentage: 0.6,
+
+                    categoryPercentage: 0.7
+
+                }));
+
+                schedulingChart.data.datasets = datasets;
+
+                schedulingChart.update();
+
+            }
+
+           
+
+            function updateImpact(locationData) {
+
+                const intelligentSchedule = scheduleWorkloads(locationData, 'intelligent');
+
+                const standardSchedule = scheduleWorkloads(locationData, 'standard');
+
+ 
+
+                const intelligentImpact = calculateImpact(intelligentSchedule, locationData);
+
+                const standardImpact = calculateImpact(standardSchedule, locationData);
+
+               
+
+                const currentImpact = state.mode === 'intelligent' ? intelligentImpact : standardImpact;
+
+                document.getElementById('impact-cost').textContent = `€${currentImpact.cost.toFixed(2)}`;
+
+                document.getElementById('impact-co2').textContent = `${currentImpact.co2.toFixed(1)} kg`;
+
+ 
+
+ 
+
+                impactChart.data.datasets = [
+
+                    {
+
+                        label: 'Intelligent',
+
+                        data: [intelligentImpact.cost, intelligentImpact.co2],
+
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)', // emerald-500
+
+                    },
+
+                    {
+
+                        label: 'Standard',
+
+                        data: [standardImpact.cost, standardImpact.co2],
+
+                        backgroundColor: 'rgba(107, 114, 128, 0.7)', // gray-500
+
+                    }
+
+                ];
+
+                impactChart.update();
+
+            }
+
+ 
+
+ 
+
+            // --- SIMULATION ALGORITHMS ---
+
+            function scheduleWorkloads(locationData, mode) {
+
+                let availableTime = Array(24).fill(true);
+
+                const scheduled = [];
+
+                const workloads = JSON.parse(JSON.stringify(SIM_DATA.workloads));
+
+ 
+
+                if (mode === 'intelligent') {
+
+                    // Simple heuristic: score each hour by low price and high generation
+
+                    const scores = locationData.prices.map((price, i) => {
+
+                        const priceScore = (Math.max(...locationData.prices) - price);
+
+                        const genScore = locationData.generation[i];
+
+                        return genScore + priceScore;
+
+                    });
+
+ 
+
+                    // Sort workloads by duration to place longest first
+
+                    workloads.sort((a, b) => b.duration - a.duration);
+
+ 
+
+                    for (const workload of workloads) {
+
+                        if (workload.duration === 24) { // Handle continuous workloads
+
+                             workload.start = 0;
+
+                             workload.end = 24;
+
+                             scheduled.push(workload);
+
+                             continue;
+
+                        }
+
+ 
+
+                        let bestStartTime = -1;
+
+                        let bestScore = -Infinity;
+
+ 
+
+                        for (let start = 0; start <= 24 - workload.duration; start++) {
+
+                            let possible = true;
+
+                            let currentScore = 0;
+
+                            for (let t = start; t < start + workload.duration; t++) {
+
+                                if (!availableTime[t]) possible = false;
+
+                                currentScore += scores[t];
+
+                            }
+
+                            if (possible && currentScore > bestScore) {
+
+                                bestScore = currentScore;
+
+                                bestStartTime = start;
+
+                            }
+
+                        }
+
+ 
+
+                        if (bestStartTime !== -1) {
+
+                            workload.start = bestStartTime;
+
+                            workload.end = bestStartTime + workload.duration;
+
+                            for (let t = workload.start; t < workload.end; t++) {
+
+                                availableTime[t] = false;
+
+                            }
+
+                            scheduled.push(workload);
+
+                        }
+
+                    }
+
+                } else { // Standard mode
+
+                    let currentTime = 0;
+
+                    for (const workload of workloads) {
+
+                         if (workload.duration === 24) { // Handle continuous workloads
+
+                             workload.start = 0;
+
+                             workload.end = 24;
+
+                             scheduled.push(workload);
+
+                             continue;
+
+                        }
+
+                        workload.start = currentTime;
+
+                        workload.end = currentTime + workload.duration;
+
+                        currentTime += workload.duration;
+
+                        scheduled.push(workload);
+
+                    }
+
+                }
+
+                return scheduled;
+
+            }
+
+ 
+
+            function calculateImpact(schedule, locationData) {
+
+                let totalCost = 0;
+
+                let totalCo2 = 0;
+
+                const co2PerKw_Fossil = 0.4; // kg CO2 per kWh from grid
+
+                const co2PerKw_Renewable = 0.05; // kg CO2 per kWh (lifecycle)
+
+ 
+
+                for (const job of schedule) {
+
+                    for (let hour = job.start; hour < job.end; hour++) {
+
+                        const energyNeeded = job.demand; // in kW for one hour -> kWh
+
+                        const priceAtHour = locationData.prices[hour] / 1000; // price per kWh
+
+                        totalCost += energyNeeded * priceAtHour;
+
+ 
+
+                        const generationAtHour = locationData.generation[hour];
+
+                        if (energyNeeded <= generationAtHour) {
+
+                            totalCo2 += energyNeeded * co2PerKw_Renewable;
+
+                        } else {
+
+                            const renewablePart = generationAtHour;
+
+                            const fossilPart = energyNeeded - generationAtHour;
+
+                            totalCo2 += (renewablePart * co2PerKw_Renewable) + (fossilPart * co2PerKw_Fossil);
+
+                        }
+
+                    }
+
+                }
+
+                return { cost: totalCost, co2: totalCo2 };
+
+            }
+
+ 
+
+ 
+
+            // --- START THE APP ---
+
+            init();
+
+        });
+
+    </script>
+
+</body>
+
+</html>
