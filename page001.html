@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainable Edge Computing Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom styles for better aesthetics and responsiveness */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Darker text for readability */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px; /* Fixed height for charts */
+            width: 100%;
+        }
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .grid-cols-2 {
+                grid-template-columns: 1fr; /* Stack columns on small screens */
+            }
+            .chart-container {
+                height: 300px; /* Slightly smaller height on mobile */
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container">
+        <header class="text-center py-8">
+            <h1 class="text-4xl font-extrabold text-indigo-700 mb-4">Sustainable Edge Computing Simulator</h1>
+            <p class="text-lg text-gray-600">
+                An interactive prototype demonstrating intelligent workload scheduling based on renewable energy availability and spot market pricing.
+            </p>
+        </header>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-indigo-600 mb-4">Workload Demand</h2>
+            <p class="text-gray-600 mb-6">Adjust the sliders to set the demand for different Kubernetes container workloads. The simulator will then attempt to schedule these workloads efficiently.</p>
+            <div id="workload-sliders" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Workload sliders will be dynamically added here by JavaScript -->
+            </div>
+            <button id="schedule-button" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:-translate-y-1">
+                Schedule Workloads
+            </button>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-indigo-600 mb-4">Edge Locations Overview</h2>
+            <p class="text-gray-600 mb-6">Explore the configurations of our seven sovereign German edge data centers. Each location has unique server capacities, GPU availability, and energy sources.</p>
+            <div id="edge-locations-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Edge location cards will be dynamically added here by JavaScript -->
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-bold text-indigo-600 mb-4">Simulation Results & Graphs</h2>
+            <p class="text-gray-600 mb-6">View the real-time energy availability, spot market prices, and how workloads are distributed across the edge locations after scheduling.</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="card p-4">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">Renewable Energy Mix</h3>
+                    <div class="chart-container">
+                        <canvas id="energyMixChart"></canvas>
+                    </div>
+                </div>
+                <div class="card p-4">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">Leipzig Day-Ahead Spot Prices (EUR/MWh)</h3>
+                    <div class="chart-container">
+                        <canvas id="spotPriceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-4">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Workload Distribution per Location</h3>
+                <div class="chart-container">
+                    <canvas id="workloadDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card p-4 mt-8">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Scheduling Summary</h3>
+                <div id="scheduling-summary" class="text-gray-700">
+                    <p>Click "Schedule Workloads" to see the distribution.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Ensure the DOM is fully loaded before running the script
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Data Definitions ---
+            const workloadTypes = [
+                { name: 'AI Training', color: '#4c51bf' }, // indigo-700
+                { name: 'Data Backup', color: '#10b981' }, // emerald-500
+                { name: 'API Services', color: '#f59e0b' }, // amber-500
+                { name: 'Video Rendering', color: '#ef4444' }, // red-500
+                { name: 'Database Indexing', color: '#06b6d4' }  // cyan-500
+            ];
+
+            let edgeLocations = [
+                { name: 'Rostock', servers: 10, gpus: false, energySources: ['Wind'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Paderborn', servers: 8, gpus: true, energySources: ['Wind', 'Solar', 'Bio'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Munich', servers: 7, gpus: true, energySources: ['Solar'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Stuttgart', servers: 12, gpus: true, energySources: ['Solar', 'Wind'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Frankfurt', servers: 17, gpus: true, energySources: ['Conventional Grid'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Leipzig', servers: 9, gpus: false, energySources: ['Wind'], currentWorkloads: {}, energyAvailability: {} },
+                { name: 'Düsseldorf', servers: 11, gpus: false, energySources: ['Wind', 'Solar', 'Bio'], currentWorkloads: {}, energyAvailability: {} }
+            ];
+
+            let spotPrices = []; // Will be populated with 24 hours of data
+
+            // Chart instances
+            let energyMixChart;
+            let spotPriceChart;
+            let workloadDistributionChart;
+
+            // --- Helper Functions ---
+
+            /**
+             * Generates a random integer within a specified range.
+             * @param {number} min - The minimum value (inclusive).
+             * @param {number} max - The maximum value (inclusive).
+             * @returns {number} A random integer.
+             */
+            function getRandomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            /**
+             * Generates a random float within a specified range.
+             * @param {number} min - The minimum value (inclusive).
+             * @param {number} max - The maximum value (inclusive).
+             * @returns {number} A random float.
+             */
+            function getRandomFloat(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            /**
+             * Simulates Leipzig day-ahead spot prices for 24 hours.
+             * Prices are generally lower at night, peak during morning/evening, and dip midday.
+             * @returns {Array<Object>} An array of objects with hour and price.
+             */
+            function generateSpotPrices() {
+                const prices = [];
+                for (let i = 0; i < 24; i++) {
+                    let basePrice = 80; // Base EUR/MWh
+                    if (i >= 0 && i < 6) { // Night
+                        basePrice = getRandomFloat(50, 70);
+                    } else if (i >= 6 && i < 10) { // Morning peak
+                        basePrice = getRandomFloat(90, 120);
+                    } else if (i >= 10 && i < 16) { // Midday dip
+                        basePrice = getRandomFloat(70, 90);
+                    } else if (i >= 16 && i < 20) { // Evening peak
+                        basePrice = getRandomFloat(100, 150);
+                    } else { // Late evening
+                        basePrice = getRandomFloat(60, 80);
+                    }
+                    prices.push({ hour: i, price: parseFloat(basePrice.toFixed(2)) });
+                }
+                return prices;
+            }
+
+            /**
+             * Simulates renewable energy availability for each location based on its sources.
+             * Availability is a percentage (0-1).
+             */
+            function simulateEnergyAvailability() {
+                edgeLocations.forEach(location => {
+                    location.energyAvailability = {};
+                    location.energySources.forEach(source => {
+                        let availability;
+                        switch (source) {
+                            case 'Wind':
+                                availability = getRandomFloat(0.6, 0.95); // High variability
+                                break;
+                            case 'Solar':
+                                availability = getRandomFloat(0.2, 0.9); // Low at night, high during day
+                                break;
+                            case 'Bio':
+                                availability = getRandomFloat(0.7, 0.85); // More stable
+                                break;
+                            case 'Conventional Grid':
+                                availability = 1.0; // Always available
+                                break;
+                            default:
+                                availability = 0.5;
+                        }
+                        location.energyAvailability[source] = parseFloat(availability.toFixed(2));
+                    });
+                });
+            }
+
+            /**
+             * Initializes edge locations with random server capacities if not specified,
+             * and sets up initial workload counts to zero.
+             */
+            function initializeEdgeLocations() {
+                edgeLocations.forEach(location => {
+                    if (!location.servers) {
+                        location.servers = getRandomInt(5, 17); // Random servers between 5 and 17
+                    }
+                    workloadTypes.forEach(type => {
+                        location.currentWorkloads[type.name] = 0;
+                    });
+                });
+            }
+
+            // --- UI Rendering Functions ---
+
+            /**
+             * Renders the workload demand sliders in the UI.
+             */
+            function renderWorkloadSliders() {
+                const container = document.getElementById('workload-sliders');
+                container.innerHTML = ''; // Clear previous content
+
+                workloadTypes.forEach(type => {
+                    const sliderDiv = document.createElement('div');
+                    sliderDiv.className = 'flex flex-col items-center p-4 bg-gray-50 rounded-lg border border-gray-200';
+                    sliderDiv.innerHTML = `
+                        <label for="${type.name.toLowerCase().replace(/\s/g, '-')}-demand" class="text-md font-medium text-gray-700 mb-2">${type.name}</label>
+                        <input type="range" id="${type.name.toLowerCase().replace(/\s/g, '-')}-demand" min="0" max="100" value="10" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer range-lg">
+                        <span id="${type.name.toLowerCase().replace(/\s/g, '-')}-value" class="mt-2 text-indigo-600 font-semibold">10</span>
+                    `;
+                    container.appendChild(sliderDiv);
+
+                    // Update value display on slider change
+                    const slider = sliderDiv.querySelector('input');
+                    const valueSpan = sliderDiv.querySelector('span');
+                    slider.oninput = (event) => {
+                        valueSpan.textContent = event.target.value;
+                    };
+                });
+            }
+
+            /**
+             * Renders the edge location cards in the UI.
+             */
+            function renderEdgeLocations() {
+                const container = document.getElementById('edge-locations-display');
+                container.innerHTML = ''; // Clear previous content
+
+                edgeLocations.forEach(location => {
+                    const locationCard = document.createElement('div');
+                    locationCard.className = 'card p-4 bg-blue-50 border border-blue-200';
+                    locationCard.innerHTML = `
+                        <h3 class="text-xl font-bold text-blue-700 mb-2">${location.name}</h3>
+                        <p class="text-gray-700 text-sm mb-1">Servers: <span class="font-semibold">${location.servers}</span></p>
+                        <p class="text-gray-700 text-sm mb-1">GPU Accelerators: <span class="font-semibold">${location.gpus ? 'Yes' : 'No'}</span></p>
+                        <p class="text-gray-700 text-sm mb-1">Energy Sources: <span class="font-semibold">${location.energySources.join(', ')}</span></p>
+                        <div class="mt-3 text-sm">
+                            <h4 class="font-semibold text-gray-600">Current Energy Availability:</h4>
+                            ${Object.entries(location.energyAvailability).map(([source, availability]) => `
+                                <p class="ml-2">${source}: <span class="font-medium text-green-700">${(availability * 100).toFixed(0)}%</span></p>
+                            `).join('')}
+                        </div>
+                    `;
+                    container.appendChild(locationCard);
+                });
+            }
+
+            /**
+             * Renders or updates the Energy Mix Chart.
+             */
+            function renderEnergyMixChart() {
+                const ctx = document.getElementById('energyMixChart').getContext('2d');
+
+                // Calculate total capacity for each energy source across all locations
+                const energySourceCounts = {};
+                edgeLocations.forEach(location => {
+                    location.energySources.forEach(source => {
+                        energySourceCounts[source] = (energySourceCounts[source] || 0) + 1; // Simple count for mix
+                    });
+                });
+
+                const labels = Object.keys(energySourceCounts);
+                const data = Object.values(energySourceCounts);
+                const backgroundColors = labels.map(label => {
+                    switch (label) {
+                        case 'Wind': return '#4ade80'; // green-400
+                        case 'Solar': return '#fbbf24'; // amber-400
+                        case 'Bio': return '#84cc16'; // lime-500
+                        case 'Conventional Grid': return '#94a3b8'; // slate-400
+                        default: return '#cbd5e1'; // slate-300
+                    }
+                });
+
+                if (energyMixChart) {
+                    energyMixChart.data.labels = labels;
+                    energyMixChart.data.datasets[0].data = data;
+                    energyMixChart.data.datasets[0].backgroundColor = backgroundColors;
+                    energyMixChart.update();
+                } else {
+                    energyMixChart = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: data,
+                                backgroundColor: backgroundColors,
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                title: {
+                                    display: false,
+                                    text: 'Overall Energy Source Mix'
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            /**
+             * Renders or updates the Spot Price Chart.
+             */
+            function renderSpotPriceChart() {
+                const ctx = document.getElementById('spotPriceChart').getContext('2d');
+                const labels = spotPrices.map(p => `${p.hour}:00`);
+                const data = spotPrices.map(p => p.price);
+
+                if (spotPriceChart) {
+                    spotPriceChart.data.labels = labels;
+                    spotPriceChart.data.datasets[0].data = data;
+                    spotPriceChart.update();
+                } else {
+                    spotPriceChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Price (EUR/MWh)',
+                                data: data,
+                                borderColor: '#3b82f6', // blue-500
+                                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                fill: true,
+                                tension: 0.3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false,
+                                },
+                                title: {
+                                    display: false,
+                                    text: 'Leipzig Day-Ahead Spot Prices'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Hour of Day'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Price (EUR/MWh)'
+                                    },
+                                    beginAtZero: false
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            /**
+             * Renders or updates the Workload Distribution Chart.
+             */
+            function renderWorkloadDistributionChart() {
+                const ctx = document.getElementById('workloadDistributionChart').getContext('2d');
+
+                const labels = edgeLocations.map(loc => loc.name);
+                const datasets = workloadTypes.map(type => {
+                    return {
+                        label: type.name,
+                        data: edgeLocations.map(loc => loc.currentWorkloads[type.name] || 0),
+                        backgroundColor: type.color,
+                        borderColor: type.color,
+                        borderWidth: 1
+                    };
+                });
+
+                if (workloadDistributionChart) {
+                    workloadDistributionChart.data.labels = labels;
+                    workloadDistributionChart.data.datasets = datasets;
+                    workloadDistributionChart.update();
+                } else {
+                    workloadDistributionChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: false,
+                                    text: 'Workload Distribution'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Edge Location'
+                                    }
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Number of Workloads'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            /**
+             * Updates the scheduling summary display.
+             * @param {Object} summary - An object containing scheduling details.
+             */
+            function updateSchedulingSummary(summary) {
+                const summaryDiv = document.getElementById('scheduling-summary');
+                let html = '<h4 class="font-semibold text-lg mb-2">Workload Assignment:</h4>';
+                if (Object.keys(summary).length === 0) {
+                    html += '<p>No workloads were scheduled or all demands were zero.</p>';
+                } else {
+                    html += '<ul class="list-disc pl-5">';
+                    for (const locationName in summary) {
+                        html += `<li class="mb-1"><span class="font-bold">${locationName}:</span>`;
+                        const workloads = summary[locationName];
+                        if (Object.keys(workloads).length === 0 || Object.values(workloads).every(count => count === 0)) {
+                            html += ` No workloads assigned.</li>`;
+                        } else {
+                            html += `<ul>`;
+                            for (const workloadType in workloads) {
+                                if (workloads[workloadType] > 0) {
+                                    html += `<li class="ml-4">${workloadType}: ${workloads[workloadType]}</li>`;
+                                }
+                            }
+                            html += `</ul></li>`;
+                        }
+                    }
+                    html += '</ul>';
+                }
+                summaryDiv.innerHTML = html;
+            }
+
+            // --- Scheduling Logic ---
+
+            /**
+             * Intelligent workload scheduling algorithm.
+             * Prioritizes AI Training to GPU locations, then considers renewable energy and spot prices.
+             * This is a simplified greedy approach.
+             * @param {Object} workloadDemands - An object with workload type names as keys and desired counts as values.
+             */
+            function scheduleWorkloads(workloadDemands) {
+                // Reset current workloads for all locations
+                edgeLocations.forEach(loc => {
+                    workloadTypes.forEach(type => {
+                        loc.currentWorkloads[type.name] = 0;
+                    });
+                });
+
+                const schedulingSummary = {}; // To store which workloads go where
+
+                // Create a copy of locations to sort for scheduling
+                const availableLocations = [...edgeLocations];
+
+                // Process workloads by type, prioritizing AI Training
+                workloadTypes.forEach(type => {
+                    let remainingDemand = workloadDemands[type.name] || 0;
+
+                    if (remainingDemand === 0) return;
+
+                    // Sort locations based on suitability for the current workload type
+                    availableLocations.sort((a, b) => {
+                        // Priority 1: GPU for AI Training
+                        if (type.name === 'AI Training') {
+                            if (a.gpus && !b.gpus) return -1;
+                            if (!a.gpus && b.gpus) return 1;
+                        }
+
+                        // Priority 2: Renewable energy availability (higher is better)
+                        const aRenewableScore = a.energySources.reduce((sum, src) =>
+                            sum + (a.energyAvailability[src] || 0) * (src !== 'Conventional Grid' ? 1 : 0.1), 0); // De-prioritize grid
+                        const bRenewableScore = b.energySources.reduce((sum, src) =>
+                            sum + (b.energyAvailability[src] || 0) * (src !== 'Conventional Grid' ? 1 : 0.1), 0);
+                        if (bRenewableScore !== aRenewableScore) {
+                            return bRenewableScore - aRenewableScore; // Higher score first
+                        }
+
+                        // Priority 3: Spot price (lower is better, use current hour's price)
+                        const currentHourPrice = spotPrices[new Date().getHours()].price;
+                        const aCost = currentHourPrice * (1 - aRenewableScore); // Simplified cost model
+                        const bCost = currentHourPrice * (1 - bRenewableScore);
+                        if (aCost !== bCost) {
+                            return aCost - bCost; // Lower cost first
+                        }
+
+                        // Priority 4: Available server capacity (more is better)
+                        const aAvailableServers = a.servers - Object.values(a.currentWorkloads).reduce((sum, val) => sum + val, 0);
+                        const bAvailableServers = b.servers - Object.values(b.currentWorkloads).reduce((sum, val) => sum + val, 0);
+                        return bAvailableServers - aAvailableServers; // More available servers first
+                    });
+
+                    // Distribute workloads
+                    for (const location of availableLocations) {
+                        const availableCapacity = location.servers - Object.values(location.currentWorkloads).reduce((sum, val) => sum + val, 0);
+                        if (availableCapacity > 0 && remainingDemand > 0) {
+                            const assigned = Math.min(remainingDemand, availableCapacity);
+                            location.currentWorkloads[type.name] += assigned;
+                            remainingDemand -= assigned;
+
+                            if (!schedulingSummary[location.name]) {
+                                schedulingSummary[location.name] = {};
+                            }
+                            schedulingSummary[location.name][type.name] = (schedulingSummary[location.name][type.name] || 0) + assigned;
+                        }
+                        if (remainingDemand === 0) break; // All demand met for this workload type
+                    }
+                });
+
+                // Update the global edgeLocations array with the new workload assignments
+                edgeLocations = availableLocations;
+
+                // Render UI updates
+                renderEdgeLocations(); // Update energy availability display
+                renderWorkloadDistributionChart();
+                updateSchedulingSummary(schedulingSummary);
+            }
+
+            // --- Event Listeners and Initial Setup ---
+
+            // Schedule button click handler
+            document.getElementById('schedule-button').addEventListener('click', () => {
+                const workloadDemands = {};
+                workloadTypes.forEach(type => {
+                    const slider = document.getElementById(`${type.name.toLowerCase().replace(/\s/g, '-')}-demand`);
+                    workloadDemands[type.name] = parseInt(slider.value, 10);
+                });
+
+                // Simulate new energy availability and spot prices before scheduling
+                simulateEnergyAvailability();
+                spotPrices = generateSpotPrices(); // Regenerate for a new "day" or "hour"
+                renderSpotPriceChart(); // Update spot price chart
+
+                scheduleWorkloads(workloadDemands);
+            });
+
+            // Initial data generation and UI rendering on page load
+            initializeEdgeLocations();
+            simulateEnergyAvailability();
+            spotPrices = generateSpotPrices();
+
+            renderWorkloadSliders();
+            renderEdgeLocations();
+            renderEnergyMixChart();
+            renderSpotPriceChart();
+            renderWorkloadDistributionChart(); // Initial empty distribution
+        });
+    </script>
+</body>
+</html>
